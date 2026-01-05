@@ -14,15 +14,24 @@ local player = Players.LocalPlayer
 repeat task.wait() until workspace:FindFirstChild("Plots")
 
 -- =====================================================
--- FLUENT UI
+-- FLUENT UI (PC SAFE)
 -- =====================================================
 
-local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+local Fluent
+pcall(function()
+    Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+end)
+
+if not Fluent then
+    warn("Fluent não carregou. Executor bloqueando HttpGet.")
+    return
+end
+
 local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
-loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
+local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
 
 local Window = Fluent:CreateWindow({
-    Title = MarketplaceService:GetProductInfo(109983668079237).Name .. " 〢 Stellar",
+    Title = "Stellar",
     SubTitle = "discord.gg/FmMuvkaWvG",
     Size = UDim2.fromOffset(520, 400),
     Theme = "Darker",
@@ -193,20 +202,12 @@ local function toggleESP(v)
     end
 end
 
-Players.PlayerAdded:Connect(function(plr)
-    plr.CharacterAdded:Connect(function()
-        task.wait(1)
-        if espEnabled then createESP(plr) end
-    end)
-end)
-
 -- =====================================================
 -- PET FINDER (SAFE)
 -- =====================================================
 
 local petModels = game:GetService("ReplicatedStorage").Models.Animals:GetChildren()
 local petNames = {}
-
 for _,p in ipairs(petModels) do table.insert(petNames, p.Name) end
 
 local SelectedPets = {}
