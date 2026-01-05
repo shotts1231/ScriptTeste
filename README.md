@@ -4,14 +4,17 @@
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local MarketplaceService = game:GetService("MarketplaceService")
+local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
 local player = Players.LocalPlayer
 
 -- =====================================================
--- ESPERA PLOTS CARREGAREM (PC SAFE)
+-- ESPERAS IMPORTANTES (PC SAFE)
 -- =====================================================
 
+repeat task.wait() until game:IsLoaded()
 repeat task.wait() until workspace:FindFirstChild("Plots")
+repeat task.wait() until player:FindFirstChild("PlayerGui")
 
 -- =====================================================
 -- FLUENT UI (PC SAFE)
@@ -21,21 +24,17 @@ local Fluent
 pcall(function()
     Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 end)
-
-if not Fluent then
-    warn("Fluent não carregou. Executor bloqueando HttpGet.")
-    return
-end
+if not Fluent then return end
 
 local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
-local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
 
 local Window = Fluent:CreateWindow({
     Title = "Stellar",
     SubTitle = "discord.gg/FmMuvkaWvG",
     Size = UDim2.fromOffset(520, 400),
     Theme = "Darker",
-    MinimizeKey = Enum.KeyCode.RightShift
+    MinimizeKey = Enum.KeyCode.LeftControl
 })
 
 local Tabs = {
@@ -46,11 +45,22 @@ local Tabs = {
 }
 
 -- =====================================================
+-- SHOP (PC SAFE)
+-- =====================================================
+
+local shop
+task.spawn(function()
+    local main = player.PlayerGui:FindFirstChild("Main")
+    if main then
+        shop = main:FindFirstChild("CoinsShop")
+    end
+end)
+
+-- =====================================================
 -- DETECTA SEU PLOT (PC SAFE)
 -- =====================================================
 
 local plotName
-
 repeat
     task.wait()
     for _, plot in ipairs(workspace.Plots:GetChildren()) do
@@ -63,17 +73,13 @@ repeat
 until plotName
 
 -- =====================================================
--- LOCK TIME (SAFE)
+-- LOCK TIME
 -- =====================================================
 
 local remainingTime
-
 repeat
     task.wait()
-    local plot = workspace.Plots:FindFirstChild(plotName)
-    if plot then
-        remainingTime = plot:FindFirstChild("RemainingTime", true)
-    end
+    remainingTime = workspace.Plots[plotName]:FindFirstChild("RemainingTime", true)
 until remainingTime and remainingTime:IsA("TextLabel")
 
 local rtp = Tabs.Main:AddParagraph({ Title = "Lock Time: " .. remainingTime.Text })
@@ -86,7 +92,7 @@ task.spawn(function()
 end)
 
 -- =====================================================
--- STEAL BUTTON
+-- STEAL
 -- =====================================================
 
 Tabs.Main:AddButton({
@@ -95,8 +101,8 @@ Tabs.Main:AddButton({
         local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
         if not hrp then return end
         local pos = CFrame.new(0, -500, 0)
-        local start = os.clock()
-        while os.clock() - start < 1 do
+        local t = os.clock()
+        while os.clock() - t < 1 do
             hrp.CFrame = pos
             task.wait()
         end
@@ -137,17 +143,8 @@ player.CharacterAdded:Connect(applySpeed)
 if player.Character then applySpeed(player.Character) end
 
 -- =====================================================
--- SHOP SAFE
+-- SHOP KEY
 -- =====================================================
-
-local shop
-task.spawn(function()
-    repeat task.wait() until player:FindFirstChild("PlayerGui")
-    local main = player.PlayerGui:FindFirstChild("Main")
-    if main then
-        shop = main:FindFirstChild("CoinsShop")
-    end
-end)
 
 Tabs.Main:AddKeybind({
     Title = "Shop",
@@ -165,7 +162,7 @@ Tabs.Main:AddKeybind({
 -- =====================================================
 
 local espEnabled = false
-local espInstances = {}
+local esp = {}
 
 local function createESP(plr)
     if not espEnabled or plr == player then return end
@@ -184,10 +181,9 @@ local function createESP(plr)
     tl.BackgroundTransparency = 1
     tl.Text = plr.DisplayName
     tl.TextScaled = true
-    tl.TextColor3 = Color3.new(1,1,1)
     tl.TextStrokeTransparency = 0
 
-    espInstances[plr] = bb
+    esp[plr] = bb
 end
 
 local function toggleESP(v)
@@ -195,12 +191,25 @@ local function toggleESP(v)
     for _,plr in ipairs(Players:GetPlayers()) do
         if v then
             createESP(plr)
-        elseif espInstances[plr] then
-            espInstances[plr]:Destroy()
-            espInstances[plr] = nil
+        elseif esp[plr] then
+            esp[plr]:Destroy()
+            esp[plr] = nil
         end
     end
 end
+
+Tabs.Main:AddToggle("PlayerESP", {
+    Title = "Player ESP",
+    Default = false,
+    Callback = toggleESP
+})
+
+Players.PlayerAdded:Connect(function(plr)
+    plr.CharacterAdded:Connect(function()
+        task.wait(1)
+        if espEnabled then createESP(plr) end
+    end)
+end)
 
 -- =====================================================
 -- PET FINDER (SAFE)
